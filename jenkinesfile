@@ -1,0 +1,125 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Define environment variables, like Docker registry
+        DOCKER_CREDENTIALS = credentials('docker-hub-credentials') // Assuming you use Jenkins credentials store
+        DOCKER_IMAGE_BACKEND = 'myorg/backend-app'
+        DOCKER_IMAGE_FRONTEND = 'myorg/frontend-app'
+        BACKEND_APP_DIR = 'backend'
+        FRONTEND_APP_DIR = 'frontend'
+    }
+
+    stages {
+        
+        // Checkout the code from your repository
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        // Build and test the backend (Node.js app)
+        stage('Build and Test Backend') {
+            steps {
+                dir("${BACKEND_APP_DIR}") {
+                    script {
+                        // Install dependencies and run tests (assumes npm or yarn for Node.js)
+                        sh 'npm install'
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // Build and test the frontend (React app)
+        stage('Build and Test Frontend') {
+            steps {
+                dir("${FRONTEND_APP_DIR}") {
+                    script {
+                        // Install dependencies and run tests (assumes npm or yarn for React)
+                        sh 'npm install'
+                        sh 'npm test'
+                    }
+                }
+            }
+        }
+
+        // Docker build for the backend
+        stage('Build Backend Docker Image') {
+            steps {
+                dir("${BACKEND_APP_DIR}") {
+                    script {
+                        // Build Docker image for backend app
+                        sh 'docker build -t ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} .'
+                    }
+                }
+            }
+        }
+
+        // Docker build for the frontend
+        stage('Build Frontend Docker Image') {
+            steps {
+                dir("${FRONTEND_APP_DIR}") {
+                    script {
+                        // Build Docker image for frontend app
+                        sh 'docker build -t ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} .'
+                    }
+                }
+            }
+        }
+
+        // Push backend Docker image to registry
+        stage('Push Backend Image') {
+            steps {
+                script {
+                    // Push the backend image to the Docker registry
+                    sh "docker login -u ${DOCKER_CREDENTIALS_USR} -p ${DOCKER_CREDENTIALS_PSW}"
+                    sh "docker push ${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER}"
+                }
+            }
+        }
+
+        // Push frontend Docker image to registry
+        stage('Push Frontend Image') {
+            steps {
+                script {
+                    // Push the frontend image to the Docker registry
+                    sh "docker login -u ${DOCKER_CREDENTIALS_USR} -p ${DOCKER_CREDENTIALS_PSW}"
+                    sh "docker push ${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER}"
+                }
+            }
+        }
+
+        // Deploy both backend and frontend to the target environment (e.g., Kubernetes, ECS)
+        stage('Deploy') {
+            steps {
+                script {
+                    // Assume you're using Kubernetes for deployment
+                    sh "kubectl set image deployment/backend-app backend=${DOCKER_IMAGE_BACKEND}:${BUILD_NUMBER} --record"
+                    sh "kubectl set image deployment/frontend-app frontend=${DOCKER_IMAGE_FRONTEND}:${BUILD_NUMBER} --record"
+                }
+            }
+        }
+
+        // Post-deployment verification and tests
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    // Verify that the backend and frontend are running correctly (replace with your specific checks)
+                    sh "curl http://my-backend-url/health"
+                    sh "curl http://my-frontend-url/health"
+                }
+            }
+        }
+
+    }
+
+    post {
+        always {
+            // Clean up Docker images if needed
+            sh 'docker system prune -f'
+        }
+    }
+}
+
