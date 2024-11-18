@@ -1,0 +1,27 @@
+
+### Features
+
+- **Flask-based API**: A basic back-end API built using Flask.
+- **Health Check Endpoint**: `/health` endpoint for system health monitoring.
+- **Greeting API**: `/api/greet` endpoint that returns a custom greeting message.
+- **Dockerized Back-End**: The Flask back-end is containerized using Docker for easy deployment.
+- **CI/CD Pipeline with Jenkins**: A Jenkins pipeline file that builds, tests, and deploys the Dockerized application.
+
+### Requirements
+
+- **Docker**: For containerizing the application and creating Docker images.
+- **Jenkins**: For automating the CI/CD process.
+- **GitHub**: For source code hosting and version control.
+
+### Getting Started
+
+Follow these steps to set up the project locally or run it using Docker.
+
+#### 1. Clone the Repository
+
+Clone this repository to your local machine:
+
+```bash
+git clone https://github.com/preshbaba/big.git
+cd big
+
